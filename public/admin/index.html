@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KhetVaani - Production Admin Console</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Leaflet CSS for Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="header-left">
+      <h1>📡 KhetVaani Production Weather Operations Console</h1>
+      <span class="live-status-pill" id="live-pill">🔴 Connecting...</span>
+    </div>
+  </header>
+
+  <div class="admin-grid">
+
+    <!-- Left Column: Event Creator & Active Events -->
+    <section class="admin-card">
+      <h2>🌩️ Production Weather Event Broadcast</h2>
+      <p class="subtitle">Broadcasts live weather alerts to all farmer plots within spatial radius (&lt;5s SSE push).</p>
+
+      <form id="form-create-event">
+        <div class="form-group">
+          <label>Weather Event Type:</label>
+          <select id="event-type">
+            <option value="heavy_rain">Heavy Rain (तेज बारिश)</option>
+            <option value="frost">Frost (पाला)</option>
+            <option value="heatwave">Heatwave (भीषण गर्मी)</option>
+            <option value="dry_spell">Dry Spell (सूखा)</option>
+            <option value="hail_conducive">Hail Conducive (ओलावृष्टि की संभावना)</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Severity Level:</label>
+            <select id="event-severity">
+              <option value="yellow">Yellow (Advisory / Warning)</option>
+              <option value="red">Red (Extreme Risk / Emergency)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Target Radius (km):</label>
+            <input type="number" id="event-radius" value="25" min="1" max="500">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Center Lat:</label>
+            <input type="number" step="0.0001" id="event-lat" value="26.9124">
+          </div>
+          <div class="form-group">
+            <label>Center Lon:</label>
+            <input type="number" step="0.0001" id="event-lon" value="75.7873">
+          </div>
+        </div>
+
+        <input type="hidden" id="event-simulated" value="false">
+
+        <button type="submit" class="primary-btn" id="btn-broadcast-event">
+          🚀 Broadcast Weather Alert to Farmers (<5s Live Sync)
+        </button>
+      </form>
+
+      <hr class="divider">
+
+      <h2>Active Production Weather Events</h2>
+      <div id="active-events-list" class="events-list">
+        <p class="empty-msg">No active weather alerts currently broadcasting.</p>
+      </div>
+    </section>
+
+    <!-- Right Column: Interactive Plot Map & Delayed Follow-ups -->
+    <section class="admin-card">
+      <h2>🗺️ Target Plot Map & Real-time State</h2>
+      <div id="map" class="map-container"></div>
+
+      <hr class="divider">
+
+      <h2>⚠️ Delayed Alerts Requiring Helper Follow-Up (>10 mins)</h2>
+      <div id="followup-list" class="followup-list">
+        <p class="empty-msg">No delayed alerts requiring helper follow-up.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Full-Width Bottom Section: Crop Stage Rule Editor -->
+  <section class="admin-card rules-section">
+    <h2>🌾 Crop Stage Rules Editor & Provenance Audit</h2>
+    <p class="subtitle">Every threshold requires a <code>source</code>. Rules with <code>source='PLACEHOLDER'</code> are flagged below.</p>
+
+    <div class="rules-grid" id="rules-grid">
+      <!-- Dynamically populated rules -->
+    </div>
+  </section>
+
+  <!-- Full-Width El Niño / NOAA ONI Intelligence Panel -->
+  <section class="admin-card elnino-section">
+    <h2>🌊 Real-Time El Niño / La Niña Monitor (NOAA ONI)</h2>
+    <p class="subtitle">Live Oceanic Niño Index from NOAA ERSST.v5 dataset. Sample size: <strong id="oni-sample-size">–</strong> years of observations (1950–present).</p>
+
+    <div class="elnino-grid">
+      <div class="oni-stat-card">
+        <div class="oni-label">ONI Anomaly</div>
+        <div class="oni-value" id="oni-value">–</div>
+        <div class="oni-unit">°C deviation</div>
+      </div>
+      <div class="oni-stat-card">
+        <div class="oni-label">Status</div>
+        <div class="oni-badge" id="oni-status-badge">–</div>
+        <div class="oni-unit" id="oni-season">–</div>
+      </div>
+      <div class="oni-stat-card">
+        <div class="oni-label">Historical Min</div>
+        <div class="oni-value" id="oni-hist-min">–</div>
+        <div class="oni-unit">°C (worst La Niña)</div>
+      </div>
+      <div class="oni-stat-card">
+        <div class="oni-label">Historical Max</div>
+        <div class="oni-value" id="oni-hist-max">–</div>
+        <div class="oni-unit">°C (worst El Niño)</div>
+      </div>
+      <div class="oni-stat-card">
+        <div class="oni-label">Std Deviation</div>
+        <div class="oni-value" id="oni-std-dev">–</div>
+        <div class="oni-unit">±°C spread</div>
+      </div>
+      <div class="oni-stat-card">
+        <div class="oni-label">Uncertainty Label</div>
+        <div class="oni-badge oni-uncertain" id="oni-uncertainty">uncertain</div>
+        <div class="oni-unit">per IMD advisory</div>
+      </div>
+    </div>
+
+    <div class="elnino-farmer-msg" id="elnino-farmer-msg" style="display:none;">
+      <span class="farmer-msg-label">🔊 Farmer receives (ONE sentence):</span>
+      <span id="elnino-farmer-sentence"></span>
+    </div>
+
+    <div class="elnino-footer">
+      <span id="oni-fetched-at" class="oni-timestamp">Not yet fetched</span>
+      <button class="secondary-btn" id="btn-refresh-elnino">🔄 Refresh from NOAA</button>
+    </div>
+  </section>
+
+  <!-- Rule Edit & Impact Preview Modal -->
+  <div class="modal-backdrop" id="modal-edit-rule" style="display: none;">
+    <div class="modal-content">
+      <h2>Edit Crop Stage Rule & Preview Impact</h2>
+      <input type="hidden" id="edit-rule-id">
+
+      <div class="form-group">
+        <label>Crop Stage Rule ID:</label>
+        <input type="text" id="edit-rule-label" readonly>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Threshold Value:</label>
+          <input type="number" step="0.1" id="edit-rule-threshold">
+        </div>
+        <div class="form-group">
+          <label>Unit:</label>
+          <input type="text" id="edit-rule-unit">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Severity Level:</label>
+          <select id="edit-rule-severity">
+            <option value="yellow">Yellow</option>
+            <option value="red">Red</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Source / Provenance:</label>
+          <input type="text" id="edit-rule-source">
+        </div>
+      </div>
+
+      <!-- Preview Results Box -->
+      <div id="preview-result-box" class="preview-box" style="display: none;">
+        <h3>Impact Preview</h3>
+        <p id="preview-summary-text"></p>
+      </div>
+
+      <div class="modal-actions">
+        <button class="secondary-btn" id="btn-preview-impact">🔍 Preview Affected Plots</button>
+        <button class="primary-btn" id="btn-confirm-rule-edit">✔ Confirm & Commit Version</button>
+        <button class="cancel-btn" id="btn-cancel-rule-edit">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="admin.js" type="module"></script>
+</body>
+</html>

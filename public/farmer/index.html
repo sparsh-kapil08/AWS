@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KhetVaani - स्मार्ट खेतवाणी एआई</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#15803d">
+</head>
+<body class="state-green" id="body-app">
+
+  <!-- Header Banner -->
+  <header class="app-header">
+    <div class="logo-area">
+      <div class="logo-badge">🌾</div>
+      <div>
+        <h1 class="logo-title">खेतवाणी AI (KhetVaani)</h1>
+        <div class="location-pill" id="location-pill">📍 लोकेशन: जयपुर (26.91°, 75.78°)</div>
+      </div>
+    </div>
+    <button class="header-action-btn" id="btn-open-register" title="फसल बदलें">
+      <span>🌾</span> फसल बदलें
+    </button>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Hero Card with Interactive 3D Voice Orb -->
+    <div class="hero-ai-card" id="status-card">
+      
+      <!-- Current Crop & Stage Badge -->
+      <div class="crop-info-bar" id="crop-info-bar">
+        <span class="crop-badge" id="crop-badge">🌾 गेहूँ (Wheat)</span>
+        <span class="stage-badge" id="stage-badge">🌱 शुरुआती चरण (20 दिन)</span>
+      </div>
+
+      <!-- Pulsing AI Orb Container -->
+      <div class="orb-wrapper" id="orb-wrapper">
+        <div class="ai-glow-ring"></div>
+        <div class="ai-orb-core" id="ai-orb-core">
+          <span class="orb-icon" id="orb-icon">🤖</span>
+        </div>
+        
+        <!-- Live Audio Soundwaves -->
+        <div class="soundwave-bar-group" id="soundwaves" style="display: none;">
+          <div class="wave-v bar-1"></div>
+          <div class="wave-v bar-2"></div>
+          <div class="wave-v bar-3"></div>
+          <div class="wave-v bar-4"></div>
+          <div class="wave-v bar-5"></div>
+        </div>
+      </div>
+
+      <!-- Live Voice Chat Dialogue Bubble -->
+      <div class="chat-bubble-card" id="chat-bubble">
+        <div class="user-query-line" id="user-query-text">"बोलिए, मैं सुन रहा हूँ..."</div>
+        <div class="ai-response-line" id="ai-reply-text">नमस्ते किसान भाई! नीचे माइक बटन दबाकर कुछ भी पूछें।</div>
+      </div>
+
+      <!-- Big Microphone Voice Assistant Button (Primary Target >80px) -->
+      <button class="main-mic-btn" id="btn-voice-mic" aria-label="बोलकर पूछें">
+        <div class="mic-btn-icon" id="mic-icon">🎙️</div>
+        <div class="mic-btn-text">
+          <span class="mic-title" id="mic-label">बोलकर पूछें (Tap to Talk)</span>
+          <span class="mic-sub">मौसम • सिंचाई • फसल सुरक्षा</span>
+        </div>
+      </button>
+
+      <!-- Response Action Buttons (Shown during advisories) -->
+      <div class="ack-actions-group" id="ack-actions" style="display: none;">
+        <button class="ack-card-btn btn-done" id="btn-ack-done">
+          <span class="ack-btn-icon">✔</span>
+          <span class="ack-btn-text">कर लिया</span>
+        </button>
+        <button class="ack-card-btn btn-cannot" id="btn-ack-cannot">
+          <span class="ack-btn-icon">✖</span>
+          <span class="ack-btn-text">नहीं कर सकता</span>
+        </button>
+        <button class="ack-card-btn btn-notmy" id="btn-ack-notmy">
+          <span class="ack-btn-icon">🚫</span>
+          <span class="ack-btn-text">मेरा खेत नहीं</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Quick Voice Shortcut Cards (Illiterate-First Large Cards) -->
+    <div class="quick-cards-grid">
+      <button class="quick-card-btn" data-query="मौसम कैसा रहेगा">
+        <div class="card-icon-wrapper weather-bg">🌤️</div>
+        <div class="card-content">
+          <span class="card-title">मौसम हाल</span>
+          <span class="card-desc">आज और कल का मौसम</span>
+        </div>
+      </button>
+
+      <button class="quick-card-btn" data-query="पानी कब लगाऊँ">
+        <div class="card-icon-wrapper water-bg">💧</div>
+        <div class="card-content">
+          <span class="card-title">सिंचाई सलाह</span>
+          <span class="card-desc">पानी लगाने का सही समय</span>
+        </div>
+      </button>
+
+      <button class="quick-card-btn" data-query="मेरी फसल का हाल बताओ">
+        <div class="card-icon-wrapper crop-bg">🌾</div>
+        <div class="card-content">
+          <span class="card-title">मेरी फसल</span>
+          <span class="card-desc">विकास और चरण की स्थिति</span>
+        </div>
+      </button>
+
+      <button class="quick-card-btn" data-query="दवा और कीटनाशक सुरक्षा बताओ">
+        <div class="card-icon-wrapper safety-bg">💊</div>
+        <div class="card-content">
+          <span class="card-title">फसल सुरक्षा</span>
+          <span class="card-desc">कीट एवं दवा सुरक्षा जानकारी</span>
+        </div>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Photo Card & Location Registration Modal -->
+  <div class="modal-overlay" id="modal-register" style="display: none;">
+    <div class="modal-sheet">
+      <h2 class="sheet-title">खेत एवं फसल जानकारी</h2>
+
+      <!-- Location Selector Card -->
+      <div class="gps-sensor-card" id="gps-sensor-card">
+        <div class="gps-icon">📍</div>
+        <div class="gps-info">
+          <div class="gps-title" id="gps-status-title">खेत की लोकेशन (District Location)</div>
+          <select id="select-district" class="district-select">
+            <option value="jaipur" data-lat="26.9124" data-lon="75.7873" selected>जयपुर (Jaipur - 26.91°, 75.78°)</option>
+            <option value="jodhpur" data-lat="26.2389" data-lon="73.0243">जोधपुर (Jodhpur)</option>
+            <option value="ajmer" data-lat="26.4499" data-lon="74.6399">अजमेर (Ajmer)</option>
+            <option value="kota" data-lat="25.2138" data-lon="75.8648">कोटा (Kota)</option>
+            <option value="udaipur" data-lat="24.5854" data-lon="73.7125">उदयपुर (Udaipur)</option>
+            <option value="bharatpur" data-lat="27.2170" data-lon="77.4895">भरतपुर (Bharatpur)</option>
+            <option value="delhi" data-lat="28.6139" data-lon="77.2090">दिल्ली / एनसीआर (Delhi NCR)</option>
+          </select>
+        </div>
+        <button class="gps-refresh-btn" id="btn-refresh-gps">📍 GPS प्रयोग करें</button>
+      </div>
+
+      <h3 class="sheet-section-title">फसल का चयन करें (Choose Crop)</h3>
+      <div class="photo-select-grid">
+        <div class="photo-select-card active" data-crop="wheat" id="card-wheat">
+          <div class="select-card-icon wheat-color">🌾</div>
+          <div class="select-card-name">गेहूँ (Wheat)</div>
+        </div>
+
+        <div class="photo-select-card" data-crop="mustard" id="card-mustard">
+          <div class="select-card-icon mustard-color">🌼</div>
+          <div class="select-card-name">सरसों (Mustard)</div>
+        </div>
+
+        <div class="photo-select-card" data-crop="chickpea" id="card-chickpea">
+          <div class="select-card-icon chickpea-color">🌱</div>
+          <div class="select-card-name">चना (Chickpea)</div>
+        </div>
+      </div>
+
+      <h3 class="sheet-section-title">फसल का चरण (Growth Stage)</h3>
+      <div class="photo-select-grid" id="stage-grid">
+        <div class="photo-select-card active" data-stage="crown_root_initiation">
+          <div class="select-card-icon stage-color">🌱</div>
+          <div class="select-card-name">शुरुआती चरण (CRI)</div>
+        </div>
+        <div class="photo-select-card" data-stage="flowering">
+          <div class="select-card-icon stage-color">🌸</div>
+          <div class="select-card-name">फूल आने पर (Flowering)</div>
+        </div>
+      </div>
+
+      <!-- Spoken Read-Back Box -->
+      <div class="spoken-readback-card" id="readback-box">
+        <div class="readback-avatar">🗣️</div>
+        <div class="readback-content">
+          <div class="readback-title">आवाज़ पुष्टि (Spoken Read-Back)</div>
+          <div class="readback-body" id="readback-text">
+            आपकी फसल <b>गेहूँ</b> है, जयपुर लोकेशन पर। क्या यह सही है?
+          </div>
+        </div>
+        <button class="listen-readback-btn" id="btn-readback-audio">🔊 सुनें</button>
+      </div>
+
+      <div class="modal-sheet-actions">
+        <button class="action-btn-primary" id="btn-confirm-register">
+          ✔ हाँ, सही है (Save & Start AI)
+        </button>
+        <button class="action-btn-secondary" id="btn-close-register">
+          रद्द करें (Cancel)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

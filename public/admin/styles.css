@@ -1,0 +1,336 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #0f172a;
+  color: #f8fafc;
+  padding: 20px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background-color: #1e293b;
+  padding: 16px 24px;
+  border-radius: 16px;
+  border: 1px solid #334155;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.live-status-pill {
+  background-color: #059669;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .admin-grid { grid-template-columns: 1fr; }
+}
+
+.admin-card {
+  background-color: #1e293b;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #38bdf8;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+input, select {
+  padding: 10px 14px;
+  background-color: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background-color: #2563eb;
+  color: #ffffff;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  background-color: #0891b2;
+  color: #ffffff;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resolve-btn {
+  background-color: #16a34a;
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #334155;
+}
+
+.map-container {
+  height: 300px;
+  width: 100%;
+  border-radius: 12px;
+}
+
+.events-list, .followup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-item-card {
+  background-color: #0f172a;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.event-item-card.red { border-color: #ef4444; }
+
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.rule-card {
+  background-color: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rule-card.flagged {
+  border-color: #eab308;
+}
+
+.source-badge {
+  background-color: #334155;
+  color: #94a3b8;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.source-badge.flagged {
+  background-color: #ca8a04;
+  color: #ffffff;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 200;
+}
+
+.modal-content {
+  background-color: #1e293b;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.preview-box {
+  background-color: #0f172a;
+  border: 2px dashed #06b6d4;
+  border-radius: 10px;
+  padding: 12px;
+  color: #38bdf8;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cancel-btn {
+  background-color: #475569;
+  color: #ffffff;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* ── El Niño / NOAA ONI Panel ─────────────────────────────────────────────── */
+
+.elnino-section {
+  margin-top: 24px;
+}
+
+.elnino-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.oni-stat-card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.oni-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.oni-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #f1f5f9;
+  line-height: 1;
+}
+
+.oni-unit {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.oni-badge {
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #64748b;
+  color: #fff;
+}
+
+.oni-uncertain {
+  background: #d97706;
+  color: #fff;
+}
+
+.elnino-farmer-msg {
+  background: #1e293b;
+  border: 1px solid #f59e0b;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.farmer-msg-label {
+  font-size: 0.75rem;
+  color: #f59e0b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#elnino-farmer-sentence {
+  font-size: 1rem;
+  color: #f8fafc;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.elnino-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.oni-timestamp {
+  font-size: 0.75rem;
+  color: #64748b;
+}
