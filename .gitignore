@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
 infra/node_modules/
-package-lock.json
+
 
 # Environment and secrets
 .env
