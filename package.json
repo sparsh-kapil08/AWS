@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "constructs": "^10.4.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
     "vitest": "^3.0.7"
   }
 }

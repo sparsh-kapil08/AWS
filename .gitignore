@@ -1,2 +1,38 @@
+# Dependencies
+node_modules/
+infra/node_modules/
+package-lock.json
+
+# Environment and secrets
 .env
-node_modules
+.env.*
+!.env.example
+*.pem
+*.key
+
+# AWS CDK outputs and build artifacts
+cdk.out/
+infra/cdk.out/
+infra/cdk.context.json
+*.tsbuildinfo
+
+# Archives and build bundles
+*.zip
+*.tar.gz
+*.tgz
+
+# Logs and runtime diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary configuration files
+apprunner-*.json
+/tmp/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

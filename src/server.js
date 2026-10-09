@@ -26,6 +26,16 @@ app.use('/api', farmerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/voice', voiceRoutes);
 
+// Health Check Endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    service: 'khetvaani-api'
+  });
+});
+
 // Root Redirect to Farmer PWA
 app.get('/', (req, res) => {
   res.redirect('/farmer/index.html');
