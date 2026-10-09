@@ -54,11 +54,52 @@ function initUI() {
     locationName = selectedOpt.text.split(' ')[0];
     updateReadbackText();
     updateLocationPill();
+    fetchClimateRisk();
   });
 
-  document.getElementById('btn-ack-done').addEventListener('click', () => submitAck('done'));
-  document.getElementById('btn-ack-cannot').addEventListener('click', () => submitAck('cannot'));
-  document.getElementById('btn-ack-notmy').addEventListener('click', () => submitAck('not_my_field'));
+  document.getElementById('btn-speak-climate').addEventListener('click', () => {
+    const text = document.getElementById('climate-advisory-text').innerText;
+    speakText(text);
+  });
+
+  fetchClimateRisk();
+}
+
+/**
+ * Fetch automated GPS Location Climate & El Niño Risk Predictions
+ */
+async function fetchClimateRisk() {
+  try {
+    const res = await fetch(`/api/farmer/climate-risk?lat=${farmerLat}&lon=${farmerLon}&crop=${currentCrop}&plot_id=${currentPlotId || ''}`);
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.success) return;
+
+    const zoneText = document.getElementById('climate-zone-text');
+    const metricDeficit = document.getElementById('metric-deficit-risk');
+    const metricVuln = document.getElementById('metric-drought-vuln');
+    const metricRain = document.getElementById('metric-rain-48h');
+    const advisoryBox = document.getElementById('climate-advisory-text');
+
+    const oniSign = data.el_nino.latest_oni >= 0 ? `+${data.el_nino.latest_oni}` : `${data.el_nino.latest_oni}`;
+    const statusLabel = data.el_nino.status === 'el_nino' ? 'अल नीनो' : data.el_nino.status === 'la_nina' ? 'ला नीना' : 'तटस्थ';
+    
+    zoneText.innerText = `📍 ${data.location.region_name} | NOAA ONI: ${oniSign}°C (${statusLabel})`;
+    metricDeficit.innerText = `${data.el_nino.monsoon_deficit_risk_percent}%`;
+    metricVuln.innerText = data.el_nino.drought_vulnerability === 'high' ? 'उच्च (High)' : data.el_nino.drought_vulnerability === 'medium' ? 'मध्यम' : 'सामान्य';
+    metricRain.innerText = `${data.forecast_summary.rain_48h_mm} mm`;
+    advisoryBox.innerText = data.el_nino.localized_advice_hi || data.automated_prediction.summary_hi;
+
+    // If autonomous prediction detected high risk, update body status class
+    if (data.automated_prediction.alert_level === 'red') {
+      document.getElementById('body-app').className = 'state-red';
+    } else if (data.automated_prediction.alert_level === 'yellow' && document.getElementById('body-app').className === 'state-green') {
+      document.getElementById('body-app').className = 'state-yellow';
+    }
+  } catch (err) {
+    console.warn('Climate risk fetch warning:', err);
+  }
 }
 
 /**
@@ -74,6 +115,7 @@ function requestGPSLocation() {
         locationName = `GPS (${farmerLat.toFixed(2)}°, ${farmerLon.toFixed(2)}°)`;
         updateLocationPill();
         updateReadbackText();
+        fetchClimateRisk();
       },
       (error) => {
         alert('GPS की अनुमति नहीं मिली। कृपया सूची से अपना जिला चुनें।');

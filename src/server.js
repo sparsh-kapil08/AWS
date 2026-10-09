@@ -23,6 +23,7 @@ app.use('/admin', express.static(path.join(rootDir, 'public', 'admin')));
 
 // Mount API Routes
 app.use('/api', farmerRoutes);
+app.use('/api/farmer', farmerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/voice', voiceRoutes);
 

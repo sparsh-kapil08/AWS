@@ -4,6 +4,8 @@ import { eventBus, ALERT_CREATED, ALERT_SUPERSEDED, EVENT_CHANGED } from '../ser
 import { determineCropStage } from '../agronomy/stageCalculator.js';
 import { ForecastService } from '../services/forecastService.js';
 import { evaluateRulesForPlot } from '../agronomy/rulesEngine.js';
+import { ElNinoService, getRegionalElNinoImpact } from '../services/elNinoService.js';
+import { AlertPolicyEngine } from '../services/alertPolicy.js';
 
 const router = express.Router();
 const forecastService = new ForecastService();
@@ -64,6 +66,7 @@ router.post('/register', (req, res) => {
 /**
  * 2. Get active advice for plot ("अब क्या करूँ" / "मेरी फसल")
  * RULE: Must return ACTIVE alert first before routine briefing
+ * Also evaluates automated GPS & El Niño climate predictions without waiting for admin
  */
 router.get('/plots/:plot_id/advice', async (req, res) => {
   const { plot_id } = req.params;
@@ -88,6 +91,31 @@ router.get('/plots/:plot_id/advice', async (req, res) => {
       clip_sequence: primaryAlert.clip_sequence,
       is_simulated: event ? event.simulated : false
     });
+  }
+
+  // Evaluate automated GPS & El Niño climate conditions in real-time
+  try {
+    const autoAlert = await AlertPolicyEngine.evaluateAutomatedClimateAlert({
+      plotId: plot.id,
+      lat: plot.lat,
+      lon: plot.lon,
+      crop: plot.crop,
+      sowingDate: plot.sowing_date
+    });
+
+    if (autoAlert && autoAlert.level !== 'green') {
+      return res.json({
+        type: 'active_alert',
+        alert: autoAlert,
+        event: null,
+        level: autoAlert.level,
+        clip_sequence: autoAlert.clip_sequence,
+        is_simulated: false,
+        is_automated_prediction: true
+      });
+    }
+  } catch (err) {
+    console.warn('[FarmerAdvice] Automated climate evaluation warning:', err.message);
   }
 
   // Routine stage-aware briefing fallback
@@ -115,7 +143,90 @@ router.get('/plots/:plot_id/advice', async (req, res) => {
 });
 
 /**
- * 3. Pending alerts polling endpoint with last_seen cursor
+ * 3. Real-Time GPS Location Climate & El Niño Risk Prediction API
+ * Automatically computes regional drought / excess rain vulnerabilities for the farmer's current coordinates
+ */
+router.get('/climate-risk', async (req, res) => {
+  try {
+    const lat = Number(req.query.lat) || 26.9124;
+    const lon = Number(req.query.lon) || 75.7873;
+    const crop = req.query.crop || 'wheat';
+    const plotId = req.query.plot_id || null;
+
+    // 1. Fetch live NOAA ONI status
+    let elNinoData = ElNinoService.getCached();
+    if (!elNinoData) {
+      elNinoData = await ElNinoService.fetchElNinoStatus();
+    }
+
+    // 2. Compute regional climate risk profile for GPS coordinate
+    const regionalImpact = getRegionalElNinoImpact(lat, lon, elNinoData.status, elNinoData.latest_oni);
+
+    // 3. Fetch 7-day live numerical weather forecast
+    const forecast = await forecastService.fetchForecast(lat, lon);
+    const rain48h = (forecast.data.precipitation_sum[0] || 0) + (forecast.data.precipitation_sum[1] || 0);
+    const maxTemp = forecast.data.temperature_2m_max[0] || 30;
+    const minTemp = forecast.data.temperature_2m_min[0] || 15;
+
+    // 4. Automated localized prediction
+    let alertLevel = 'green';
+    if (minTemp <= 4 || rain48h >= 45) {
+      alertLevel = 'red';
+    } else if (rain48h >= 20 || maxTemp >= 40 || (elNinoData.status === 'el_nino' && regionalImpact.monsoonDeficitRiskPercent >= 60)) {
+      alertLevel = 'yellow';
+    }
+
+    // 5. Check if active alert in database
+    let activeAlert = null;
+    if (plotId) {
+      const existing = Array.from(dbStore.alerts.values()).filter(
+        a => a.plot_id === plotId && ['created', 'delivered', 'opened', 'played'].includes(a.status)
+      );
+      if (existing.length > 0) {
+        activeAlert = existing[0];
+      }
+    }
+
+    return res.json({
+      success: true,
+      location: {
+        lat,
+        lon,
+        region_name: regionalImpact.region_name,
+        zone_key: regionalImpact.zone_key
+      },
+      el_nino: {
+        status: elNinoData.status,
+        latest_oni: elNinoData.latest_oni,
+        season: elNinoData.season,
+        year: elNinoData.year,
+        monsoon_deficit_risk_percent: regionalImpact.monsoon_deficit_risk_percent,
+        excess_rain_risk_percent: regionalImpact.excess_rain_risk_percent,
+        drought_vulnerability: regionalImpact.drought_vulnerability,
+        localized_advice_hi: regionalImpact.localized_farmer_advice_hi,
+        localized_advice_en: regionalImpact.localized_farmer_advice_en
+      },
+      forecast_summary: {
+        rain_48h_mm: Math.round(rain48h * 10) / 10,
+        max_temp_c: Math.round(maxTemp),
+        min_temp_c: Math.round(minTemp),
+        rain_probability_max: forecast.data.precipitation_probability_max[0] || 0
+      },
+      automated_prediction: {
+        alert_level: alertLevel,
+        is_autonomous: true,
+        summary_hi: regionalImpact.localized_farmer_advice_hi,
+        summary_en: regionalImpact.localized_farmer_advice_en
+      },
+      active_alert: activeAlert
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * 4. Pending alerts polling endpoint with last_seen cursor
  */
 router.get('/alerts/pending', (req, res) => {
   const { plot_id, last_seen } = req.query;
@@ -134,7 +245,7 @@ router.get('/alerts/pending', (req, res) => {
 });
 
 /**
- * 4. Submit acknowledgement (✔ "कर लिया", ✖ "नहीं कर सकता", "मेरा खेत नहीं")
+ * 5. Submit acknowledgement (✔ "कर लिया", ✖ "नहीं कर सकता", "मेरा खेत नहीं")
  */
 router.post('/alerts/:alert_id/ack', (req, res) => {
   const { alert_id } = req.params;
@@ -166,7 +277,7 @@ router.post('/alerts/:alert_id/ack', (req, res) => {
 });
 
 /**
- * 5. SSE Endpoint for Live Push (< 5s latency)
+ * 6. SSE Endpoint for Live Push (< 5s latency)
  * Includes explicit headers, no-buffering, and 15s heartbeat pings to prevent ERR_INCOMPLETE_CHUNKED_ENCODING
  */
 router.get('/alerts/stream', (req, res) => {

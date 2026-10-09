@@ -520,3 +520,106 @@ body.state-red { background-color: var(--color-red-bg); }
   font-weight: 700;
   cursor: pointer;
 }
+
+/* Climate & El Niño GPS Risk Card */
+.climate-risk-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.climate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.climate-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.climate-badge-icon {
+  font-size: 26px;
+  background: #f1f5f9;
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.climate-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.climate-card-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.speak-climate-btn {
+  min-height: 40px;
+  padding: 0 14px;
+  background-color: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.climate-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.climate-metric-box {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.metric-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 4px;
+}
+
+.metric-value.danger-text {
+  color: #dc2626;
+}
+
+.metric-value.warning-text {
+  color: #d97706;
+}
+
+.climate-advisory-box {
+  background-color: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #92400e;
+  font-weight: 600;
+}
+

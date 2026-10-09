@@ -1,5 +1,11 @@
 import { dbStore } from '../db/store.js';
 import { eventBus, ALERT_CREATED, ALERT_SUPERSEDED } from './eventBus.js';
+import { ForecastService } from './forecastService.js';
+import { ElNinoService, getRegionalElNinoImpact } from './elNinoService.js';
+import { determineCropStage } from '../agronomy/stageCalculator.js';
+import { evaluateRulesForPlot } from '../agronomy/rulesEngine.js';
+
+const forecastService = new ForecastService();
 
 export class AlertPolicyEngine {
   /**
@@ -87,6 +93,99 @@ export class AlertPolicyEngine {
 
     eventBus.emit(ALERT_CREATED, newAlert);
     return newAlert;
+  }
+
+  /**
+   * Automated GPS & El Niño Climate Alert Evaluator.
+   * Evaluates live forecast and regional El Niño vulnerability for a farmer's coordinates.
+   * Runs automatically without requiring manual admin intervention.
+   * @param {object} params
+   * @param {string} params.plotId
+   * @param {number} params.lat
+   * @param {number} params.lon
+   * @param {string} params.crop
+   * @param {string} params.sowingDate
+   * @returns {Promise<object|null>} Evaluated alert or null if normal conditions
+   */
+  static async evaluateAutomatedClimateAlert({ plotId, lat, lon, crop = 'wheat', sowingDate = null }) {
+    const numLat = Number(lat) || 26.9124;
+    const numLon = Number(lon) || 75.7873;
+    const effectiveSowing = sowingDate || new Date().toISOString().split('T')[0];
+
+    // 1. Fetch live 7-day forecast
+    const forecast = await forecastService.fetchForecast(numLat, numLon);
+    const rain48h = (forecast.data.precipitation_sum[0] || 0) + (forecast.data.precipitation_sum[1] || 0);
+    const maxTemp = forecast.data.temperature_2m_max[0] || 30;
+    const minTemp = forecast.data.temperature_2m_min[0] || 15;
+
+    let dryDays = 0;
+    for (const p of forecast.data.precipitation_sum || []) {
+      if (p < 1.0) dryDays++;
+      else break;
+    }
+
+    // 2. Fetch or retrieve El Niño status
+    let elNinoStatus = ElNinoService.getCached();
+    if (!elNinoStatus) {
+      elNinoStatus = await ElNinoService.fetchElNinoStatus();
+    }
+    const regionalImpact = getRegionalElNinoImpact(numLat, numLon, elNinoStatus.status, elNinoStatus.latest_oni);
+
+    // 3. Evaluate crop stage rules
+    const rules = Array.from(dbStore.cropStageRules.values());
+    const stageInfo = determineCropStage(crop, effectiveSowing, undefined, rules);
+    const stageMatches = evaluateRulesForPlot(crop, stageInfo.stage, forecast.data, rules);
+
+    // 4. Automated Decision Engine
+    let alertLevel = null;
+    let actionKey = null;
+    let reasonKey = null;
+    let clipSequence = [];
+
+    if (minTemp <= 4) {
+      // Frost danger (Critical Red)
+      alertLevel = 'red';
+      actionKey = 'apply_light_irrigation_frost';
+      reasonKey = 'frost_temperature_danger';
+      clipSequence = ['time_next_48h', 'apply_light_irrigation_frost'];
+    } else if (rain48h >= 25) {
+      // Heavy unseasonal rain (Red/Yellow)
+      alertLevel = rain48h >= 45 ? 'red' : 'yellow';
+      actionKey = 'skip_irrigation_rain_expected';
+      reasonKey = 'heavy_rainfall_predicted';
+      clipSequence = ['time_next_48h', 'skip_irrigation_rain_expected'];
+    } else if (maxTemp >= 40) {
+      // Heatwave advisory
+      alertLevel = 'yellow';
+      actionKey = 'maintain_soil_moisture_heat';
+      reasonKey = 'heatwave_temperature_spike';
+      clipSequence = ['time_next_48h', 'skip_irrigation_rain_expected'];
+    } else if (elNinoStatus.status === 'el_nino' && regionalImpact.monsoonDeficitRiskPercent >= 60 && dryDays >= 4) {
+      // Automated El Niño Regional Drought Advisory
+      alertLevel = 'yellow';
+      actionKey = 'el_nino_conserve_water';
+      reasonKey = 'el_nino_regional_dry_spell_predicted';
+      clipSequence = ['time_next_48h', 'skip_irrigation_rain_expected'];
+    } else if (stageMatches.length > 0) {
+      const match = stageMatches[0];
+      alertLevel = match.severity;
+      actionKey = match.actionKey;
+      reasonKey = match.reasonKey;
+      clipSequence = ['time_next_48h', match.actionKey];
+    }
+
+    if (!alertLevel || !plotId) {
+      return null;
+    }
+
+    // Create or update alert in database store & emit SSE
+    return AlertPolicyEngine.createOrUpdateAlert({
+      plotId,
+      ruleId: stageMatches.length > 0 ? stageMatches[0].ruleId : 'automated_climate_rule',
+      level: alertLevel,
+      clipSequence,
+      reasonKey
+    });
   }
 
   /**

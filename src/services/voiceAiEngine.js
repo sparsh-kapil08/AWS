@@ -119,7 +119,7 @@ export async function processFarmerVoiceInput({ transcript, plotId, lang = 'hi',
 
       // El Niño: only append for weather queries when actually detected
       if (shouldMentionElNino(nlu, transcript)) {
-        const elNinoSentence = ElNinoService.getFarmerSentence();
+        const elNinoSentence = ElNinoService.getFarmerSentence(loc.lat, loc.lon);
         if (elNinoSentence) {
           spokenTextHi += ` ${elNinoSentence}`;
         }
